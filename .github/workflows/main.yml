@@ -44,7 +44,7 @@ jobs:
           # The deployment URL, authenticated with the secret token
           DEPLOY_URL="https://x-access-token:${{ secrets.TARGET_REPO_TOKEN }}@github.com/${{ github.repository_owner }}/${{ env.TARGET_REPO_NAME }}.git"
           echo "--- DEBUG: DEPLOY_URL variable set."
-          
+          echo ${{ env.TARGET_REPO_NAME }}
           # 2. Clone Target1 into a temporary directory
           TEMP_DIR="${{ runner.temp }}/target-clone"
           echo "--- DEBUG: Cloning Target1 repo into ${TEMP_DIR} (Branch: ${{ env.TARGET_BRANCH }})"
