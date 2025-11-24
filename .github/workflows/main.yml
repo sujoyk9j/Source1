@@ -33,7 +33,6 @@ jobs:
           echo "Artifact directory '${{ env.ARTIFACT_PATH }}' created."
           
           # 2. *** ACTUAL STEP: Copy your .sql files into the dist folder ***
-          # 💡 IMPORTANT: Change 'db/*.sql' to the correct path where your SQL files live.
           cp *.* ${{ env.ARTIFACT_PATH }}/
           echo "SQL files copied to '${{ env.ARTIFACT_PATH }}'."
           
@@ -42,13 +41,6 @@ jobs:
           ls -R ${{ env.ARTIFACT_PATH }}
           
           echo "Preparation complete. Artifacts are ready for deployment."
-🔑
-          npm ci
-          npm run build
-          mkdir -p ${{ env.ARTIFACT_PATH }} # Creates a dummy 'dist' folder for testing
-          ls -R ${{ env.ARTIFACT_PATH }}
-          echo "Hello from Source1" > ${{ env.ARTIFACT_PATH }}/index.html
-          echo "Build complete. Artifacts are in '${{ env.ARTIFACT_PATH }}'."
           
       # ----------------------------------------------------
       - name: 🚀 Deploy to Target1
