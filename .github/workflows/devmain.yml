@@ -35,7 +35,7 @@ jobs:
           # We assume the files you want to copy (like test1, test2, test3) are in the root.
           # We exclude the .git folder and the .github folder (the workflow itself).
           echo "Copying files from root (excluding .github) into 'dist'..."
-          cp test1 test2 test3 ${{ env.ARTIFACT_PATH }}/
+          cp test* ${{ env.ARTIFACT_PATH }}/
           
           # Clean up the workflow folder accidentally copied into 'dist'
           rm -rf ${{ env.ARTIFACT_PATH }}/.github
