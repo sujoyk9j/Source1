@@ -3,7 +3,7 @@ name: Deploy Source1 to Target1
 on:
   push:
     branches:
-      - source_dev # Trigger on push to the 'main' branch of Source1
+      - main # Trigger on push to the 'main' branch of Source1
 
 env:
   # 💡 Change this to the folder containing your final build artifacts (e.g., build, out, public)
