@@ -36,31 +36,40 @@ jobs:
       # ----------------------------------------------------
       - name: 🚀 Deploy to Target1
         run: |
-# 1. Configure Git credentials
-git config --global user.name "github-actions[bot]"
-git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # 1. Configure Git credentials using the secret token
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # The deployment URL, authenticated with the secret token
+          DEPLOY_URL="https://x-access-token:${{ secrets.TARGET_REPO_TOKEN }}@github.com/${{ github.repository_owner }}/${{ env.TARGET_REPO_NAME }}.git"
+          echo "1"
+          
+          # 2. Clone Target1 into a temporary directory
+          TEMP_DIR="${{ runner.temp }}/target-clone"
+          git clone --single-branch --branch ${{ env.TARGET_BRANCH }} ${DEPLOY_URL} ${TEMP_DIR} || \
+          (echo "Branch ${{ env.TARGET_BRANCH }} not found, cloning default branch." && git clone ${DEPLOY_URL} ${TEMP_DIR})
+          echo "2"
+          
+          # 3. Clean up the target directory (optional, but good for static sites)
+          # We only keep the .git folder
+          find ${TEMP_DIR} -maxdepth 1 ! -name ".git" ! -name "." -exec rm -rf {} +
+          echo "3"
+          
+          # 4. Copy new artifacts from Source1 to the Target1 clone
+          rsync -av --exclude='.git' ${{ env.ARTIFACT_PATH }}/ ${TEMP_DIR}/
+          echo "4"
+          
+          # 5. Commit and Push changes
+          cd ${TEMP_DIR}
+          git add .
+          echo "5"
 
-# Authenticated URL
-DEPLOY_URL="https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/sujoyk9j/Target1.git"
-
-# 2. Clone target repo
-TEMP_DIR="/home/runner/work/_temp/target-clone"
-git clone --single-branch --branch main ${DEPLOY_URL} ${TEMP_DIR} || \
-(git clone ${DEPLOY_URL} ${TEMP_DIR})
-
-# 3. Clean content but keep .git folder
-find ${TEMP_DIR} -mindepth 1 ! -name ".git" -exec rm -rf {} +
-
-# 4. Copy build artifacts
-rsync -av --exclude='.git' dist/ ${TEMP_DIR}/
-
-# 5. Commit & push
-cd ${TEMP_DIR}
-git add .
-
-if git diff --cached --quiet; then
-    echo "No changes detected. Skipping commit."
-else
-    git commit -m "CICD Deploy from Source1 (Run $GITHUB_RUN_NUMBER)"
-    git push origin main
-fi
+          
+          # Only commit if there are changes
+          if git diff --cached --exit-code; then
+              echo "No changes detected. Skipping commit."
+          else
+              git commit -m "CICD Deploy from Source1 (Run ${{ github.run_number }})"
+              echo "Pushing changes to ${{ env.TARGET_REPO_NAME }}/${{ env.TARGET_BRANCH }}"
+              git push ${DEPLOY_URL} ${{ env.TARGET_BRANCH }}
+          fi
