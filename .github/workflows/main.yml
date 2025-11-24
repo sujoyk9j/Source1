@@ -28,8 +28,10 @@ jobs:
         run: |
           echo "Starting build process for Source1..."
           # Replace these lines with your actual build/test commands
-          # e.g., npm ci, npm run build
+          npm ci
+          npm run build
           mkdir -p ${{ env.ARTIFACT_PATH }} # Creates a dummy 'dist' folder for testing
+          ls -R ${{ env.ARTIFACT_PATH }}
           echo "Hello from Source1" > ${{ env.ARTIFACT_PATH }}/index.html
           echo "Build complete. Artifacts are in '${{ env.ARTIFACT_PATH }}'."
           
