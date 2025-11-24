@@ -81,7 +81,7 @@ jobs:
           ls -R ${{ env.ARTIFACT_PATH }}
           #rsync -av --exclude='.git' ${{ env.ARTIFACT_PATH }}/ ${TEMP_DIR}/
           #rsync -av --exclude='.git' ${{ env.ARTIFACT_PATH }}/ ${TEMP_DIR}
-          cp -r ${{ env.ARTIFACT_PATH }}/. ${TEMP_DIR}/
+          #cp -r ${{ env.ARTIFACT_PATH }}/. ${TEMP_DIR}/
           echo "--- DEBUG: Artifacts copied successfully."
           
           # 5. Commit and Push changes
