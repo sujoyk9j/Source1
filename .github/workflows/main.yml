@@ -60,7 +60,7 @@ jobs:
           # We only keep the .git folder
           echo "--- DEBUG: Cleaning up Target1 directory contents (excluding .git)."
           #find ${TEMP_DIR} -maxdepth 1 ! -name ".git" ! -name "." -exec rm -rf {} +
-          rm -rf ${TEMP_DIR}/* ${TEMP_DIR}/.[!.]*
+          #rm -rf ${TEMP_DIR}/* ${TEMP_DIR}/.[!.]*
           echo "--- DEBUG: Target1 directory cleaned."
           
           # 4. Copy new artifacts from Source1 to the Target1 clone
