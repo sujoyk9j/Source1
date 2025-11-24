@@ -34,7 +34,9 @@ jobs:
           echo "Build complete. Artifacts are in '${{ env.ARTIFACT_PATH }}'."
           
       # ----------------------------------------------------
+# ----------------------------------------------------
       - name: 🚀 Deploy to Target1
+        # The configuration and cloning steps can remain in a single block
         run: |
           # 1. Configure Git credentials using the secret token
           git config --global user.name "github-actions[bot]"
@@ -55,15 +57,27 @@ jobs:
           # 4. Copy new artifacts from Source1 to the Target1 clone
           rsync -av --exclude='.git' ${{ env.ARTIFACT_PATH }}/ ${TEMP_DIR}/
           
-          # 5. Commit and Push changes
-          cd ${TEMP_DIR}
+        # END OF FIRST RUN BLOCK
+        
+      - name: 💾 Commit and Push to Target1
+        # 🚨 NEW: Set the working directory for this step
+        working-directory: ${{ runner.temp }}/target-clone
+        run: |
+          # The authenticated URL must be reconstructed here if needed, 
+          # but we only need the token for the final push.
+          DEPLOY_URL="https://x-access-token:${{ secrets.TARGET_REPO_TOKEN }}@github.com/${{ github.repository_owner }}/${{ env.TARGET_REPO_NAME }}.git"
+          
+          # 1. Add changes
           git add .
           
-          # Only commit if there are changes
+          # 2. Only commit if there are changes
           if git diff --cached --exit-code; then
-              echo "No changes detected. Skipping commit."
+              echo "No changes detected. Skipping commit and push."
           else
+              # 3. Commit changes
               git commit -m "CICD Deploy from Source1 (Run ${{ github.run_number }})"
+              
+              # 4. Push changes
               echo "Pushing changes to ${{ env.TARGET_REPO_NAME }}/${{ env.TARGET_BRANCH }}"
               git push ${DEPLOY_URL} ${{ env.TARGET_BRANCH }}
           fi
