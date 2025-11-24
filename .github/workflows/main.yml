@@ -61,7 +61,8 @@ jobs:
           # 4. Copy new artifacts from Source1 to the Target1 clone
           echo "--- DEBUG: Copying artifacts from ${{ env.ARTIFACT_PATH }} to ${TEMP_DIR}/"
           #rsync -av --exclude='.git' ${{ env.ARTIFACT_PATH }}/ ${TEMP_DIR}/
-          rsync -av --exclude='.git' ${{ env.ARTIFACT_PATH }}/ ${TEMP_DIR}
+          #rsync -av --exclude='.git' ${{ env.ARTIFACT_PATH }}/ ${TEMP_DIR}
+          cp -r ${{ env.ARTIFACT_PATH }}/. ${TEMP_DIR}/
           echo "--- DEBUG: Artifacts copied successfully."
           
           # 5. Commit and Push changes
