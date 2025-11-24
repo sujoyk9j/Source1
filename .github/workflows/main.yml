@@ -23,25 +23,28 @@ jobs:
           # This step gets the code from Source1
           fetch-depth: 0 
           
-      # ----------------------------------------------------
-      - name: 🛠️ Build & Test (Placeholder)
+      - name: 🛠️ Prepare Artifacts (Copy Files)
         run: |
           echo "Starting artifact preparation for Source1..."
-          # 1. Create the target artifact directory
-          # ARTIFACT_PATH is 'dist'
+          
+          # 1. Create the target artifact directory (dist)
           mkdir -p ${{ env.ARTIFACT_PATH }} 
           echo "Artifact directory '${{ env.ARTIFACT_PATH }}' created."
           
-          # 2. *** ACTUAL STEP: Copy your .sql files into the dist folder ***
-          cp *.* ${{ env.ARTIFACT_PATH }}/
-          echo "SQL files copied to '${{ env.ARTIFACT_PATH }}'."
+          # 2. *** ACTION: Copy all files from the root into the dist folder ***
+          # We assume the files you want to copy (like test1, test2, test3) are in the root.
+          # We exclude the .git folder and the .github folder (the workflow itself).
+          echo "Copying files from root (excluding .github) into 'dist'..."
+          cp -r * ${{ env.ARTIFACT_PATH }}/
+          
+          # Clean up the workflow folder accidentally copied into 'dist'
+          rm -rf ${{ env.ARTIFACT_PATH }}/.github
           
           # 3. Final verification step
-          echo "--- DEBUG: Final contents of the build folder:"
+          echo "--- DEBUG: Final contents of the source artifact folder (${{ env.ARTIFACT_PATH }}) before copy:"
           ls -R ${{ env.ARTIFACT_PATH }}
           
-          echo "Preparation complete. Artifacts are ready for deployment."
-          
+          echo "Preparation complete. Artifacts are ready for deployment."          
       # ----------------------------------------------------
       - name: 🚀 Deploy to Target1
         run: |
