@@ -9,7 +9,7 @@ env:
   # 💡 Change this to the folder containing your final build artifacts (e.g., build, out, public)
   ARTIFACT_PATH: dist 
   # 💡 Change this to the branch you want to update in Target1
-  TARGET_BRANCH: main 
+  TARGET_BRANCH: dev 
   # The name of the target repo from your screenshot
   TARGET_REPO_NAME: Target1
 
