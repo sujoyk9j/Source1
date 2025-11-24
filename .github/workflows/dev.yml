@@ -1,0 +1,71 @@
+name: Deploy Source111 to Target1
+
+on:
+  push:
+    branches:
+      - DEVSOURCE   # 🔁 Trigger only when changes happen on DEVSOURCE branch
+
+env:
+  # Folder to store deployment artifacts
+  ARTIFACT_PATH: dist
+  
+  # Target repo branch to push changes to
+  TARGET_BRANCH: dev
+  
+  # Target repository name
+  TARGET_REPO_NAME: Target1
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Source1 (DEVSOURCE branch)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🛠 Prepare Artifacts
+        run: |
+          echo "Preparing deployment artifacts..."
+          
+          # Create dist folder if missing
+          mkdir -p ${{ env.ARTIFACT_PATH }}
+
+          # Copy all source files except .git and workflows
+          rsync -av --exclude='.git' --exclude='.github' ./  ${{ env.ARTIFACT_PATH }}/
+
+          echo "Final artifact directory structure:"
+          ls -R ${{ env.ARTIFACT_PATH }}
+
+      - name: 🚀 Deploy to Target1
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          DEPLOY_URL="https://x-access-token:${{ secrets.TARGET_REPO_TOKEN }}@github.com/${{ github.repository_owner }}/${{ env.TARGET_REPO_NAME }}.git"
+
+          TEMP_DIR="${{ runner.temp }}/target-clone"
+          echo "Cloning Target repo into $TEMP_DIR..."
+
+          # Clone the target repo branch
+          git clone --single-branch --branch ${{ env.TARGET_BRANCH }} ${DEPLOY_URL} ${TEMP_DIR} || \
+          (echo "Branch not found — cloning default branch." && git clone ${DEPLOY_URL} ${TEMP_DIR})
+
+          # Copy contents into target repo folder
+          echo "Copying updated artifacts to cloned repo..."
+          rsync -av --exclude='.git' ${{ env.ARTIFACT_PATH }}/ ${TEMP_DIR}/
+
+          cd ${TEMP_DIR}
+
+          git add .
+
+          # Commit only if files changed
+          if git diff --cached --exit-code; then
+              echo "No changes detected. Nothing to commit."
+          else
+              echo "Changes detected — committing and pushing..."
+              git commit -m "Automated Deployment from Source1 (DEVSOURCE) - Run ${{ github.run_number }}"
+              git push ${DEPLOY_URL} ${{ env.TARGET_BRANCH }}
+              echo "Deployment successful."
+          fi

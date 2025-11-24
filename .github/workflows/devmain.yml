@@ -1,0 +1,106 @@
+name: Deploy SourceDev to Target1
+
+on:
+  push:
+    branches:
+      - source_dev # Trigger on push to the 'main' branch of Source1
+
+env:
+  # 💡 Change this to the folder containing your final build artifacts (e.g., build, out, public)
+  ARTIFACT_PATH: dist 
+  # 💡 Change this to the branch you want to update in Target1
+  TARGET_BRANCH: dev 
+  # The name of the target repo from your screenshot
+  TARGET_REPO_NAME: Target1
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source1 Repository
+        uses: actions/checkout@v4
+        with:
+          # This step gets the code from Source1
+          fetch-depth: 0 
+          
+      - name: 🛠️ Prepare Artifacts (Copy Files)
+        run: |
+          echo "Starting artifact preparation for Source1..."
+          
+          # 1. Create the target artifact directory (dist)
+          mkdir -p ${{ env.ARTIFACT_PATH }} 
+          echo "Artifact directory '${{ env.ARTIFACT_PATH }}' created."
+          
+          # 2. *** ACTION: Copy all files from the root into the dist folder ***
+          # We assume the files you want to copy (like test1, test2, test3) are in the root.
+          # We exclude the .git folder and the .github folder (the workflow itself).
+          echo "Copying files from root (excluding .github) into 'dist'..."
+          cp test1 test2 test3 ${{ env.ARTIFACT_PATH }}/
+          
+          # Clean up the workflow folder accidentally copied into 'dist'
+          rm -rf ${{ env.ARTIFACT_PATH }}/.github
+          
+          # 3. Final verification step
+          echo "--- DEBUG: Final contents of the source artifact folder (${{ env.ARTIFACT_PATH }}) before copy:"
+          ls -R ${{ env.ARTIFACT_PATH }}
+          
+          echo "Preparation complete. Artifacts are ready for deployment."          
+      # ----------------------------------------------------
+      - name: 🚀 Deploy to Target1
+        run: |
+          # 1. Configure Git credentials using the secret token
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "--- DEBUG: Git config set for bot user."
+          
+          # The deployment URL, authenticated with the secret token
+          DEPLOY_URL="https://x-access-token:${{ secrets.TARGET_REPO_TOKEN }}@github.com/${{ github.repository_owner }}/${{ env.TARGET_REPO_NAME }}.git"
+          echo "--- DEBUG: DEPLOY_URL variable set."
+          echo ${{ env.TARGET_REPO_NAME }}
+          # 2. Clone Target1 into a temporary directory
+          TEMP_DIR="${{ runner.temp }}/target-clone"
+          echo "--- DEBUG: Cloning Target1 repo into ${TEMP_DIR} (Branch: ${{ env.TARGET_BRANCH }})"
+          git clone --single-branch --branch ${{ env.TARGET_BRANCH }} ${DEPLOY_URL} ${TEMP_DIR} || \
+          (echo "Branch ${{ env.TARGET_BRANCH }} not found, cloning default branch." && git clone ${DEPLOY_URL} ${TEMP_DIR})
+          cd ${TEMP_DIR}
+          echo "--- DEBUG: Checking Git status in clone directory..."
+          git status
+          cd - > /dev/null # Go back to the original working directory
+          echo "--- DEBUG: Target1 successfully cloned."
+          
+          # 3. Clean up the target directory (optional, but good for static sites)
+          # We only keep the .git folder
+          echo "--- DEBUG: Cleaning up Target1 directory contents (excluding .git)."
+          #find ${TEMP_DIR} -maxdepth 1 ! -name ".git" ! -name "." -exec rm -rf {} +
+          rm -rf ${TEMP_DIR}/* ${TEMP_DIR}/.[!.]*
+          echo "--- DEBUG: Target1 directory cleaned."
+          
+          # 4. Copy new artifacts from Source1 to the Target1 clone
+          echo "--- DEBUG: Copying artifacts from ${{ env.ARTIFACT_PATH }} to ${TEMP_DIR}/"
+          echo "--- DEBUG: Listing contents of source artifact folder (${{ env.ARTIFACT_PATH }}) before copy:"
+          ls -R ${{ env.ARTIFACT_PATH }}
+          #rsync -av --exclude='.git' ${{ env.ARTIFACT_PATH }}/ ${TEMP_DIR}/
+          #rsync -av --exclude='.git' ${{ env.ARTIFACT_PATH }}/ ${TEMP_DIR}
+          cp -r ${{ env.ARTIFACT_PATH }}/. ${TEMP_DIR}/
+          echo "--- DEBUG: Artifacts copied successfully."
+          
+          # 5. Commit and Push changes
+          cd ${TEMP_DIR}
+          echo "--- DEBUG: Changed directory to ${TEMP_DIR}."
+          git add .
+          echo "--- DEBUG: All files staged for commit."
+
+          
+          # Only commit if there are changes
+          if git diff --cached --exit-code; then
+              echo "No changes detected. Skipping commit."
+          else
+              echo "--- DEBUG: Changes detected. Proceeding with commit."
+              git commit -m "CICD Deploy from Source1 (Run ${{ github.run_number }})"
+              echo "--- DEBUG: Files committed locally."
+              echo "Pushing changes to ${{ env.TARGET_REPO_NAME }}/${{ env.TARGET_BRANCH }}"
+              git push ${DEPLOY_URL} ${{ env.TARGET_BRANCH }}
+              echo "--- DEBUG: Push complete."
+          fi
+          
+          echo "--- DEBUG: Deployment script finished."
