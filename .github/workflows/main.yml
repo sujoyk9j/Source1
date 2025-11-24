@@ -1,0 +1,69 @@
+name: Deploy Source1 to Target1
+
+on:
+  push:
+    branches:
+      - main # Trigger on push to the 'main' branch of Source1
+
+env:
+  # 💡 Change this to the folder containing your final build artifacts (e.g., build, out, public)
+  ARTIFACT_PATH: dist 
+  # 💡 Change this to the branch you want to update in Target1
+  TARGET_BRANCH: main 
+  # The name of the target repo from your screenshot
+  TARGET_REPO_NAME: Target1
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source1 Repository
+        uses: actions/checkout@v4
+        with:
+          # This step gets the code from Source1
+          fetch-depth: 0 
+          
+      # ----------------------------------------------------
+      - name: 🛠️ Build & Test (Placeholder)
+        run: |
+          echo "Starting build process for Source1..."
+          # Replace these lines with your actual build/test commands
+          # e.g., npm ci, npm run build
+          mkdir -p ${{ env.ARTIFACT_PATH }} # Creates a dummy 'dist' folder for testing
+          echo "Hello from Source1" > ${{ env.ARTIFACT_PATH }}/index.html
+          echo "Build complete. Artifacts are in '${{ env.ARTIFACT_PATH }}'."
+          
+      # ----------------------------------------------------
+      - name: 🚀 Deploy to Target1
+        run: |
+          # 1. Configure Git credentials using the secret token
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # The deployment URL, authenticated with the secret token
+          DEPLOY_URL="https://x-access-token:${{ secrets.TARGET_REPO_TOKEN }}@github.com/${{ github.repository_owner }}/${{ env.TARGET_REPO_NAME }}.git"
+          
+          # 2. Clone Target1 into a temporary directory
+          TEMP_DIR="${{ runner.temp }}/target-clone"
+          git clone --single-branch --branch ${{ env.TARGET_BRANCH }} ${DEPLOY_URL} ${TEMP_DIR} || \
+          (echo "Branch ${{ env.TARGET_BRANCH }} not found, cloning default branch." && git clone ${DEPLOY_URL} ${TEMP_DIR})
+          
+          # 3. Clean up the target directory (optional, but good for static sites)
+          # We only keep the .git folder
+          find ${TEMP_DIR} -maxdepth 1 ! -name ".git" ! -name "." -exec rm -rf {} +
+          
+          # 4. Copy new artifacts from Source1 to the Target1 clone
+          rsync -av --exclude='.git' ${{ env.ARTIFACT_PATH }}/ ${TEMP_DIR}/
+          
+          # 5. Commit and Push changes
+          cd ${TEMP_DIR}
+          git add .
+          
+          # Only commit if there are changes
+          if git diff --cached --exit-code; then
+              echo "No changes detected. Skipping commit."
+          else
+              git commit -m "CICD Deploy from Source1 (Run ${{ github.run_number }})"
+              echo "Pushing changes to ${{ env.TARGET_REPO_NAME }}/${{ env.TARGET_BRANCH }}"
+              git push ${DEPLOY_URL} ${{ env.TARGET_BRANCH }}
+          fi
