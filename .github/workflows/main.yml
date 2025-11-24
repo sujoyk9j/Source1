@@ -50,6 +50,10 @@ jobs:
           echo "--- DEBUG: Cloning Target1 repo into ${TEMP_DIR} (Branch: ${{ env.TARGET_BRANCH }})"
           git clone --single-branch --branch ${{ env.TARGET_BRANCH }} ${DEPLOY_URL} ${TEMP_DIR} || \
           (echo "Branch ${{ env.TARGET_BRANCH }} not found, cloning default branch." && git clone ${DEPLOY_URL} ${TEMP_DIR})
+          cd ${TEMP_DIR}
+          echo "--- DEBUG: Checking Git status in clone directory..."
+          git status
+          cd - > /dev/null # Go back to the original working directory
           echo "--- DEBUG: Target1 successfully cloned."
           
           # 3. Clean up the target directory (optional, but good for static sites)
