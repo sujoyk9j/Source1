@@ -1,5 +1,4 @@
-# ----------------------------------------------------
-      - name: 🚀 Deploy to Target1
+        - name: Deploy to Target1
         # The configuration and cloning steps can remain in a single block
         run: |
           # 1. Configure Git credentials using the secret token
