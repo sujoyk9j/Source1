@@ -35,6 +35,7 @@ jobs:
           # We access them via 'steps.config_loader.outputs.key-name'
           echo "TARGET_REPO_NAME=${{ steps.config_loader.outputs.target_repo_name }}" >> $GITHUB_ENV
           echo "TARGET_BRANCH=${{ steps.config_loader.outputs.target_branch }}" >> $GITHUB_ENV
+          echo "ARTIFACT_PATH=${{ steps.config_loader.outputs.ARTIFACT_PATH }}" >> $GITHUB_ENV
           echo "--- DEBUG: Environment variables loaded from config."
 
           
