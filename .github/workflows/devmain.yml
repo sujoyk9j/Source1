@@ -25,7 +25,7 @@ jobs:
 
       - name: ⚙️ Load Configuration Variables
         id: config_loader # Give this step an ID to access its output
-        uses: pietrobolcato/action-read-yaml@1.0.0
+        uses: martinhaintz/ga-yaml-parser@v0.1.2
         with:
           file: deploy-config.yml
 
