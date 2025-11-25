@@ -56,7 +56,7 @@ jobs:
           cp test* ${{ env.ARTIFACT_PATH }}/
           
           # Clean up the workflow folder accidentally copied into 'dist'
-          rm -rf ${{ env.ARTIFACT_PATH }}/.github
+          #rm -rf ${{ env.ARTIFACT_PATH }}/.github
           
           # 3. Final verification step
           echo "--- DEBUG: Final contents of the source artifact folder (${{ env.ARTIFACT_PATH }}) before copy:"
