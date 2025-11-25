@@ -56,7 +56,7 @@ jobs:
           cp test* ${{ env.ARTIFACT_PATH }}/
           
           # Clean up the workflow folder accidentally copied into 'dist'
-          #rm -rf ${{ env.ARTIFACT_PATH }}/.github
+          rm -rf ${{ env.ARTIFACT_PATH }}/.github
           
           # 3. Final verification step
           echo "--- DEBUG: Final contents of the source artifact folder (${{ env.ARTIFACT_PATH }}) before copy:"
@@ -90,9 +90,9 @@ jobs:
           echo "--- DEBUG: Target1 successfully cloned."
           
           # 3. Clean up the target directory (optional, but good for static sites)
-          echo "--- DEBUG: Cleaning up Target1 directory contents (excluding .git)."
-          rm -rf ${TEMP_DIR}/* ${TEMP_DIR}/.[!.]* # Safer cleanup
-          echo "--- DEBUG: Target1 directory cleaned."
+          #echo "--- DEBUG: Cleaning up Target1 directory contents (excluding .git)."
+          #rm -rf ${TEMP_DIR}/* ${TEMP_DIR}/.[!.]* # Safer cleanup
+          #echo "--- DEBUG: Target1 directory cleaned."
           
           # 4. Copy new artifacts from Source1 to the Target1 clone
           echo "--- DEBUG: Copying artifacts from ${{ env.ARTIFACT_PATH }} to ${TEMP_DIR}/"
