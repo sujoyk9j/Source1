@@ -1,3 +1,4 @@
 # deploy-config.yml
+ARTIFACT_PATH: dist
 target_repo_name: Source1
 target_branch: source_dev2

@@ -25,24 +25,18 @@ jobs:
 
       - name: ⚙️ Load Configuration Variables
         id: config_loader # Give this step an ID to access its output
-        uses: actions/github-script@v7
+        uses: martinhaintz/ga-yaml-parser@v0.1.2
         with:
-          script: |
-            const fs = require('fs');
-            #const yaml = require('js-yaml');
-            const config = yaml.load(fs.readFileSync('deploy-config.yml', 'utf8'));
-            
-            // Set outputs that can be used later in the workflow
-            core.setOutput('TARGET_REPO_NAME', config.target_repo_name);
-            core.setOutput('TARGET_BRANCH', config.target_branch);
-        env:
-          NODE_OPTIONS: --experimental-vm-modules # Required for some runners
+          file: deploy-config.yml
 
       - name: Set Environment Variables
         run: |
-          # Use the outputs from the previous step to define ENV variables
-          echo "TARGET_REPO_NAME=${{ steps.config_loader.outputs.TARGET_REPO_NAME }}" >> $GITHUB_ENV
-          echo "TARGET_BRANCH=${{ steps.config_loader.outputs.TARGET_BRANCH }}" >> $GITHUB_ENV
+          # The parser output uses the key names from your YAML file.
+          # We access them via 'steps.config_loader.outputs.key-name'
+          echo "TARGET_REPO_NAME=${{ steps.config_loader.outputs.target_repo_name }}" >> $GITHUB_ENV
+          echo "TARGET_BRANCH=${{ steps.config_loader.outputs.target_branch }}" >> $GITHUB_ENV
+          echo "ARTIFACT_PATH=${{ steps.config_loader.outputs.ARTIFACT_PATH }}" >> $GITHUB_ENV
+          echo "--- DEBUG: Environment variables loaded from config."
 
           
       - name: 🛠️ Prepare Artifacts (Copy Files)
