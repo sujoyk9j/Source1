@@ -1,0 +1,122 @@
+name: Deploy SourceDev to Target1 (Manual Trigger)
+
+on:
+  # 1. REMOVED the 'on: push:' trigger.
+  # 2. ADDED 'workflow_dispatch' for manual runs with inputs.
+  workflow_dispatch:
+    inputs:
+      # This creates the dropdown menu in the GitHub Actions UI
+      target_env:
+        description: 'Target Deployment Environment (also used as Target Branch Name)'
+        required: true
+        type: choice
+        options:
+          - dev_source2
+          - main
+        default: 'main'
+
+# NOTE: The dynamic environment variables (ARTIFACT_PATH, TARGET_REPO_NAME) 
+# must be set here since we removed the top-level env block.
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    # 3. SET STATIC ENVIRONMENT VARIABLES FOR THE JOB
+    env:
+      ARTIFACT_PATH: dist
+      TARGET_REPO_NAME: Source1
+
+    steps:
+      - name: Checkout Source1 Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      # 4. REMOVED FAILING CONFIG_LOADER STEP
+      # The target branch is now passed directly from the workflow_dispatch input.
+          
+      - name: Set Target Environment Variables
+        run: |
+          # Use the user's input to set the TARGET_BRANCH ENV variable
+          echo "TARGET_BRANCH=${{ github.event.inputs.target_env }}" >> $GITHUB_ENV
+          echo "--- DEBUG: TARGET_BRANCH set to: ${{ github.event.inputs.target_env }}"
+          
+      # ----------------------------------------------------
+      - name: 🛠️ Prepare Artifacts (Copy Files)
+        run: |
+          echo "Starting artifact preparation for Source1..."
+          
+          # 1. Create the target artifact directory (dist)
+          mkdir -p ${{ env.ARTIFACT_PATH }} 
+          echo "Artifact directory '${{ env.ARTIFACT_PATH }}' created."
+          
+          # 2. *** ACTION: Copy your files ***
+          echo "Copying files (test*, etc.) into 'dist'..."
+          cp test* ${{ env.ARTIFACT_PATH }}/
+          
+          # Clean up the workflow folder accidentally copied into 'dist'
+          rm -rf ${{ env.ARTIFACT_PATH }}/.github
+          
+          # 3. Final verification step
+          echo "--- DEBUG: Final contents of the source artifact folder (${{ env.ARTIFACT_PATH }}) before copy:"
+          ls -R ${{ env.ARTIFACT_PATH }}
+          
+          echo "Preparation complete. Artifacts are ready for deployment."      
+      # ----------------------------------------------------
+      - name: 🚀 Deploy to Target1
+        run: |
+          # 1. Configure Git credentials using the secret token
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "--- DEBUG: Git config set for bot user."
+          
+          # The deployment URL, authenticated with the secret token
+          # Note: Uses ${{ env.TARGET_REPO_NAME }} and ${{ env.TARGET_BRANCH }}
+          DEPLOY_URL="https://x-access-token:${{ secrets.TARGET_REPO_TOKEN }}@github.com/${{ github.repository_owner }}/${{ env.TARGET_REPO_NAME }}.git"
+          echo "--- DEBUG: DEPLOY_URL variable set."
+          echo "Target Repo: ${{ env.TARGET_REPO_NAME }}"
+
+          # 2. Clone Target1 into a temporary directory
+          TEMP_DIR="${{ runner.temp }}/target-clone"
+          echo "--- DEBUG: Cloning Target1 repo into ${TEMP_DIR} (Branch: ${{ env.TARGET_BRANCH }})"
+          # Use the selected TARGET_BRANCH from the input
+          git clone --single-branch --branch ${{ env.TARGET_BRANCH }} ${DEPLOY_URL} ${TEMP_DIR} || \
+          (echo "Branch ${{ env.TARGET_BRANCH }} not found, cloning default branch." && git clone ${DEPLOY_URL} ${TEMP_DIR})
+          cd ${TEMP_DIR}
+          echo "--- DEBUG: Checking Git status in clone directory..."
+          git status
+          cd - > /dev/null # Go back to the original working directory
+          echo "--- DEBUG: Target1 successfully cloned."
+          
+          # 3. Clean up the target directory (optional, but good for static sites)
+          echo "--- DEBUG: Cleaning up Target1 directory contents (excluding .git)."
+          rm -rf ${TEMP_DIR}/* ${TEMP_DIR}/.[!.]* # Safer cleanup
+          echo "--- DEBUG: Target1 directory cleaned."
+          
+          # 4. Copy new artifacts from Source1 to the Target1 clone
+          echo "--- DEBUG: Copying artifacts from ${{ env.ARTIFACT_PATH }} to ${TEMP_DIR}/"
+          cp -r ${{ env.ARTIFACT_PATH }}/. ${TEMP_DIR}/
+          echo "--- DEBUG: Artifacts copied successfully."
+          
+          # 5. Commit and Push changes
+          cd ${TEMP_DIR}
+          echo "--- DEBUG: Changed directory to ${TEMP_DIR}."
+          git add .
+          echo "--- DEBUG: All files staged for commit."
+
+          
+          # Only commit if there are changes
+          if git diff --cached --exit-code; then
+              echo "No changes detected. Skipping commit."
+          else
+              echo "--- DEBUG: Changes detected. Proceeding with commit."
+              # Include the selected branch in the commit message for clarity
+              git commit -m "Manual Deploy from SourceDev to ${{ env.TARGET_BRANCH }} (Run ${{ github.run_number }})"
+              echo "--- DEBUG: Files committed locally."
+              echo "Pushing changes to ${{ env.TARGET_REPO_NAME }}/${{ env.TARGET_BRANCH }}"
+              git push ${DEPLOY_URL} ${{ env.TARGET_BRANCH }}
+              echo "--- DEBUG: Push complete."
+          fi
+          
+          echo "--- DEBUG: Deployment script finished."
