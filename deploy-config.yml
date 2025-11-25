@@ -1,0 +1,3 @@
+# deploy-config.yml
+target_repo_name: Target1
+target_branch: dev
